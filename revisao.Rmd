@@ -1,0 +1,126 @@
+## Modelos Espaciais Lineares Mistos Generalizados
+
+Usualmente, considera-se que os dados $y_{i}$ provenientes de um processo geoestatístico, coletados (leia-se medidos) no conjunto de pontos $\{x_{i}, i = 1,\dots,n\}$, possuem um processo contínuo latente $S(x)$ sobre toda a região amostral, que dita como esses dados são gerados. Para isso, considere que $S(x)$ é um processo gaussiano com média $\mu(x_{i})$ e variância $\sigma^{2}$, com função de correlação entre os pontos denotada por $\rho(u) = Corr\{S(x),S(x')\}$, em que $u$ denota a distância entre $x$ e $x'$ e que condicionais em $S(x)$, os $y_{i}$ são realizações de variáveis aleatórias mutualmente independentes $Y(x_{i})$, normalmente distribuídas, com médias condicionais $\mathbb{E}[Y(x_{i})|S(x)] = S(x_i)$ e variâncias condicionais $\tau^{2}$.
+
+Levando isso em consideração, o modelo para $Y(x_{i})$ é dado por $Y_i = S(x_{i}) + Z_{i}$, com $Z_{i}$ sendo variáveis aleatórias mutualmente independentes e normalmente distribuídas, com média 0 e variância $\tau^{2}$. Quando as observações desse processo geoestatístico não possuem respostas gaussianas, como contagens ou proporções, usamos o seguinte modelo hierárquico para denotar o modelo espacial linear misto generalizado:
+
+\begin{equation}
+\begin{aligned}
+[Y(x)|S(x)] &\sim f(.;\mu(x), \psi) \\
+g(\mu(x)) &= D\beta + S(x)
+(\#eq:modngauss)
+\end{aligned}
+\end{equation}
+
+Assume-se que os componentes de $Y(x)$ são condicionalmente independentes dado o processo latente **$S(x) = \sigma U(x;\phi) + \tau Z$**. O preditor linear do modelo é ligado à média por meio da uma função de ligação **g**. Os efeitos fixos são denotados por **$D\beta$**, onde **$D$** representa a matriz $n \times p$ de delineamento experimental, contendo $p$ covariáveis, e **$\beta$** um vetor $p \times 1$ de parâmetros de regressão a serem estimados.
+
+Os efeitos aleatórios espacialmente correlacionados são dados por **$\sigma U(x;\phi)$**, onde **$\sigma$** (*sill*) denota a variância dos efeitos aleatórios e **$U(x;\phi)$** é a variância unitária de um Campo Gaussiano Aleatório (*Gaussian Random Field*), com função de correlação $\rho(u,\phi)$, que descreve a estrutura da dependência espacial entre os elementos de $U(x;\phi)$. Os efeitos aleatórios não correlacionados são dados por **$\tau Z \sim N(0,\tau^{2}I)$**, onde **$\tau^{2}$** (normalmente chamado de efeito pepita, ou *nugget*) representa a soma das variações não-espaciais e de micro escala no modelo. Dessa forma, a parte dos efeitos aleatórios (completos) do preditor linear é gaussiana, com matriz de covariância **$\Sigma = \sigma^{2}U(x;\phi) + \tau^{2}I$**.
+
+Assume-se que a função de correlação $\rho$ seja positiva definida, e dependa apenas da distância entre dois pontos, dada por $u_{ij} = ||x_i - x_j||$. Existem diversas funções válidas para $\rho$, dentre elas as mais usuais são a exponencial, a esférica e a *Matérn*. A função de correlação exponencial tem a forma $\rho(u;\phi) = \exp{(-\frac{u}{\phi})}$, e possui decaimento rápido, mas nunca chega a zero, de modo que pontos distantes ainda sejam correlacionados, ainda que muito fracamente. A função de correlação esférica tem a forma $\rho(u; \phi) = 1 - \frac{3}{2}\left(\frac{u}{\phi}\right) + \frac{1}{2}\left(\frac{u}{\phi}\right)^{3}$, caso $u < \phi$, e zero caso contrário. É usado em casos que a correlação entre os pontos é suave até um ponto ($\phi$, chamado de alcance) e zero para dados mais distantes que isso.
+
+A função de corelação Matèrn tem a forma $\rho(u;\phi,\kappa) = \left\{2^{\kappa - 1}\Gamma(\kappa)\right\}^{-1}\left(\frac{u}{\phi}\right)^{\kappa}K_{\kappa}\left(\frac{u}{\phi}\right)$, em que $K_{\kappa}(\cdot)$ denota a função de Bessel modificada de segunda espécie, de ordem $\kappa$, e $\Gamma(\cdot)$ é a função Gamma convencional. O parâmetro $\kappa$ controla a suavidade e o decaimento da corelação entre os pontos, assim, quanto maior o valor de $\kappa$, mais suave é o decaimento. Vale citar que a função de correlação exponencial é um caso particular da Matèrn, com $\kappa = 0.5$.
+
+A definição correta da função de correlação espacial é crucial para uma boa modelagem dos dados, e nesse sentido a Matèrn é a mais flexível, podendo assumir diferentes formas dependendo de $\kappa$. A estimação de $\kappa$ é complicada, e em \citeonline{Diggle_RibeiroJr_2007} os autores propõem uma heurísitca onde diferentes modelos são ajustados considerando um *grid* para $\kappa$, usualmente $\kappa = \{1, 1.5, 2, 2.5, \dots\}$, e verifica-se qual gera o melhor ajuste.
+
+## Estimação dos Parâmetros
+
+Um dos principais objetivos da modelagem geoestatística é a estimação do vetor de parâmetros **$\theta = (\beta, \sigma^{2}, \tau^{2}, \phi, \psi)$**. Em *Model-based Geostatistics*, (\citeonline{Diggle_RibeiroJr_2007}), os autores propõem uma abordagem de estimação baseada na maximização da função de verossimilhança marginal, visto que a superfície da log-verossimilhança do modelo é multidimensional, e de difícil investigação direta.
+
+Supondo um modelo com parâmetros $(\alpha, \nu)$, com verossimilhança denotada por $L(\alpha,\nu)$, a função de verossimilhança marginal para $\alpha$ é definida como:
+
+\begin{equation}
+L_{p}(\alpha) = L(\alpha,\hat{\nu}(\alpha)) = \max_{\nu}(L(\alpha,\nu))
+(\#eq:veroperf)
+\end{equation}
+
+Ou seja, considera-se a variação da função de verossimilhança com relação a $\alpha$ quando, para cada valor de $\alpha$, é definido para $\nu$ o valor que maximiza a log-verossimilhança com $\alpha$ fixado. Assim, reduz-se a dimensionalidade da superfície de verossimilhança, facilitando a inspeção. Além disso, é possível calcular intervalos de confiança (aproximados) para parâmetros individuais, de maneira similar aos casos uniparamétricos para a log-verossimilhança.
+
+A aplicação de métodos baseados em verossimilhança a modelos geoestatísticos para dados não-gaussianos é complicada e possui dificuldades computacionais, que surgem devido à alta dimensionalidade do vetor de efeitos aleatórios $S(x) = \{S(x_1),\dots,S(x_n)\}$.
+
+A maximização da função de verossimilhança marginal do modelo é obtida integrando-se os efeitos aleatórios da distribuição conjunta definida em \@ref(eq:modngauss), como segue:
+
+\begin{equation}
+L_{p}(\theta;y(x)) = \int_{\Re^{n}} f(y(x)|S(x)) f(S(x))dS(x)
+(\#eq:veroperfmod)
+\end{equation}
+
+O primeiro termo do produto dado em \@ref(eq:veroperfmod) é a distribuição amostral de $y(x)$, dado o vetor de efeitos aleatórios $S(x)$, enquanto que assume-se que o segundo possua distribuição Normal Multivariada. Exceto no caso em que a distribuição de $f(y(x)|S(x))$ também é gaussiana, a verossimilhança marginal é analiticamente intratável, por se tratar do produto de duas distribuições.
+
+Dessa forma, a maximização da função de verossimilhança marginal requer a solução de integrais complexas. No contexto geoestatístico, os valores do vetor $S(x)$ são dependentes, de modo que a integral em \@ref(eq:veroperfmod) possui tantas dimensões quanto observações na amostra coletada. Com isso, métodos de integração numérica, como quadratura gaussiana, quadratura de Gauss-Hermite e Gauss-Hermite adaptativo (\citeonline{Pinheiro_Bates_1995}), são problemáticos, pois a acurácia é afetada pela alta dimensionalidade (\citeonline{Breslow_Clayton_1993}).
+
+Outros métodos foram propostos para a aproximação de \@ref(eq:veroperfmod), dentre eles os mais comuns são a de verossimilhança hierárquica (obtida através de penalização de acordo com a verossimilhança da distribuição assumida para $S(x)$), proposta por \citeonline{Lee_Nelder_1996} e aprimorada por \citeonline{Banerjee_2004}. Métodos de integração por Monte Carlo foram propostos, com \citeonline{Geyer_Thompson_1992} contribuindo com a teoria para maximização para dados correlacionados/dependentes. \citeonline{Zhang_2002} desenvolveu versões baseadas no algoritmo EM para estimação dos parâmetros. \citeonline{Christensen_2004} descreve uma metodologia baseada em aproximações utilizando algoritmo MCMC (*Monte Carlo Marokv Chain*) para simular da distribuição condicional de $S(x)$.
+
+Apesar de bem-desenvolvidos, os métodos baseados em integração por Monte Carlo são computacionalmente intensivos, lentos na estimação e precisam ser verificadas quanto à convergência e acurácia (\citeonline{Geyer_1994}, \citeonline{McCulloch_1997}). Com isso em mente, \citeonline{Bonat_Ribeiro_2016} propõem uma abordagem baseada em aproximação de Laplace para a integral em \@ref(eq:veroperfmod).
+
+## Aproximação de Laplace
+
+Normalmente utilizado para análise de dados longitudinais, a aproximação de Laplace (\citeonline{Tierney_Kadane_1986}) é um método utilizado para aproximar o integrando para obter uma expressão fechada analiticamente tratável, permitindo assim a maximização da forma aproximada da verossimilhança marginal. O método é utilizado para aproximar integrais da seguinte forma:
+
+\begin{equation}
+\int_{\Re^{n}}\exp{(\varrho(u)\,du)} \approx (2\pi)^{n/2} \left|-\varrho''(\hat{u})\right|^{-1/2} \exp{(\varrho(\hat{u}))}
+(\#eq:intlaplace)
+\end{equation}
+
+Em que **$\varrho(u)$** é uma função unimodal e limitada, de uma variável $u$ n-dimensional, sendo $\hat{u}$ o valor para a qual **$\varrho(u)$** é maximizado. Portanto, muda-se um problema de integração para um problema de maximização multidimensional (que são normalmente melhor comportados), sendo necessário maximizar o o integrando e o hessiano (**$\varrho''(\hat{u})$**) analítica ou numericamente.
+
+Assumindo que a distribuição $f(y(x)|S(x))$ seja da família exponencial de distribuições (Binomial, Poisson, Beta, Gamma, Binomial Negativa, etc.), podendo ser escrita da seguinte forma:
+
+\begin{equation}
+f(y(x)|S(x);\beta) = \exp{\left\{y(x)^{\top}(D\beta + S(x)) - 1^{\top} b(D\beta + S(x)) + 1^{\top} c(y(x))\right\}}
+(\#eq:famexpo)
+\end{equation}
+
+Sendo $b(.)$ e $c(.)$ funções conhecidas, e considerando a distribuição Normal Multivariada, dada por:
+
+\begin{equation}
+f(S(x);\Sigma) = (2\pi)^{-n/2}|\Sigma|^{-1/2}\exp{\left\{-\frac{1}{2}S(x)^{\top}\Sigma^{-1}S(x)\right\}}
+(\#eq:normalmulti)
+\end{equation}
+
+Pode-se ver que o integrando em \@ref(eq:veroperf) é o produto de \@ref(eq:famexpo) e \@ref(eq:normalmulti). Assim, a função de verossimilhança marginal tem forma passível de ser aplicada na aproximação de Laplace, com:
+
+
+\begin{equation}
+\begin{aligned}
+\varrho\left(S(x)\right) = &y(x)^{\top}(D\beta + S(x)) - 1^{\top}b(D\beta + S(x)) + 1^{\top}c(y(x)) \\
+&-\frac{n}{2}\log(2\pi) - \frac{1}{2}\log|\Sigma| - \frac{1}{2} S(x)^{\top}\Sigma^{-1}S(x)
+\end{aligned}
+(\#eq:qsx)
+\end{equation}
+
+A otimização da função \@ref(eq:intlaplace) requer o valor máximo $\hat{s}$ de \@ref(eq:qsx), um problema de otimização numérica de alta dimensionalidade. \citeonline{Bonat_Ribeiro_2016} utilizam o algoritmo de Newton-Raphson para encontrar $\hat{s}$, que consiste no esquema iterativo a seguir:
+
+\begin{equation}
+s_{i+1} = s_{i} + \varrho''(s_{i})^{-1}\varrho'(s_{i})
+\end{equation}
+
+Com $\varrho'(s)$ sendo o gradiente de $\varrho(s)$. Com isso, temos as expressões genéricas para as derivadas (gradiente e hessiano) para o algoritmo de Newton-Raphson, dados por:
+
+\begin{equation}
+\begin{aligned}
+\varrho'(s) &= \{y(x) - b'(D\beta + s)\}^{\top} - s^{\top}\Sigma^{-1} \\
+\\
+\varrho''(s) &= -\operatorname{diag}{\{b''(D\beta + s)\}} - \Sigma^{-1}
+\end{aligned}
+\end{equation}
+
+De modo que a aproximação de Laplace para a log-verossimilhança é dada por:
+
+\begin{equation}
+\begin{aligned}
+l(\theta;y(x)) = &\frac{n}{2}\log(2\pi) - \frac{1}{2} \log\left|\operatorname{diag}{\{b''(D\beta + \hat{s}(\theta))\}} + \Sigma^{-1}\right|  + y(x)^{\top}(D\beta + \hat{s}(\theta)) \\
+&-1^{\top} b(D\beta + \hat{s}(\theta)) + 1^{\top} c(y(x)) - \frac{n}{2} \log(2\pi) - \frac{1}{2}\log|\Sigma| - \frac{1}{2}\hat{s}(\theta)^{\top}\Sigma^{-1}\hat{s}(\theta)
+\end{aligned}
+(\#eq:aproxlaplace)
+\end{equation}
+
+Para a maximização de \@ref(eq:aproxlaplace) os autores utilizam o algoritmo BFGS, implementado na função \texttt{optim()} do R, com o modelo parametrizado como $\theta = (\beta,\log(\sigma^{2}),\log(\phi),\log(\tau^{2}),\log(\psi)$. Sendo $\hat{\theta}$ o estimador de máxima verossimilhança de $\theta$, o mesmo tem sua distribuição assintótica dada por:
+
+\begin{equation}
+\hat{\theta} \sim N\left(\theta, I_{O}^{-1}(\hat{\theta}) \right)
+(\#eq:distassint)
+\end{equation}
+
+Com $I_{O}^{-1}(\hat{\theta})$ denotando a matriz de informação observada de $\theta$. Para que a maximização dos parâmetros seja computacionalmente eficiente, é necessário que os valores iniciais para $\theta$ sejam bem especificados. Para isso, os autores sugerem ajustar um modelo linear generalizado (utilizando a função \texttt{glm()} do R) para obter os valores iniciais de $\beta$. Baseados nesses valores, computa-se $\hat{\mu}$ e os resíduos $\hat{r} = (y - \hat{\mu})$.
+
+A variância amostral de $\hat{r}$ é usada como estimativa inicial para $\sigma^{2}$. Caso o modelo contenha efeito de pepita ($\tau^{2}$), um percentual de $\sigma^{2}$ é usado como estimativa inicial (usualmente 10%). Para $\phi$ os autores sugerem usar 10% da maior distância entre dois pontos observados na amostra.

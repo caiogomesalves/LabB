@@ -1,0 +1,535 @@
+---
+title: "Estimação em modelos lineares generalizados geoestatísticos por máxima verossimilhança baseada na aproximação de Laplace"
+author:
+  - Caio Gomes Alves
+institute:
+  - "Orientador: Prof. Dr. Paulo Justiniano Ribeiro Júnior"
+format:
+  beamer:
+    theme: Frankfurt
+    colortheme: dolphin
+    toc: true
+    toc-title: Sumário
+    toc-depth: 2
+    slide-level: 2
+    lang: pt
+bibliography: bib/ref.bib
+nocite: |
+  @*
+---
+
+```{r}
+load(".RData")
+library(geoR)
+library(geoRglm)
+library(MASS)
+library(sp)
+library(lme4)
+library(bbmle)
+library(xtable)
+library(diagram)
+options(xtable.comment = FALSE)
+```
+
+# Geoestatística
+
+## Geoestatística
+
+Geoestatística refere-se ao conjunto de métodos e modelos utilizados para analisar dados que seguem a seguinte estrutura:
+
+- Vetor de observações: $y = (y_1,y_2,\dots,y_n)^{\top}$;
+- Vetor de posições: $x = (x_1,x_2,\dots,x_n)^{\top}$;
+- As observações foram coletadas em uma região $A$ do espaço, mas poderiam ter sido medidas em qualquer ponto arbitrário de $A$.
+
+Cada observação $y_i$ é dada como uma realização parcial de um processo espacial contínuo não observado, denotado $S(x)$, nos pontos amostrais $x_i$.
+
+## Modelagem Geoestatística
+
+Usualmente, considera-se que esse processo seja estocástico, com distribuição Normal, condicional em $S(x)$.
+
+O objetivo principal da modelagem geoestatística é recuperar $S(x)$ , para ser possível fazer predição (em pontos não amostrados) e estimação (médias, medianas, tendências espaciais) [@Cressie_1993].
+
+Os modelos geoestatísticos podem ser classificados como modelos de efeitos aleatórios, com alguma estrutura de dependência espacial entre eles [@Isaaks_Srivastava_1989].
+
+## Modelos Lineares Generalizados Geoestatísticos
+
+Em muitos casos, a distribuição das observações de um processo geoestatístico não possuem respostas gaussianas, como contagens e proporções.
+
+Quando isso ocorre, usamos o seguinte modelo hierárquico para denotar os modelos lineares generalizados geoestatísticos:
+
+$$
+\begin{aligned}
+[Y(x)|S(x)] &\sim f(.;\mu(x), \psi) \\
+g(\mu(x)) &= D\beta + S(x) \\
+S(x) &= \sigma U(x;\phi) + \tau Z
+\end{aligned}
+$$ {#eq-vero-marg}
+
+## Modelos Lineares Generalizados Geoestatísticos
+
+Os efeitos aleatórios espacialmente correlacionados são dados por $\sigma U(x;\phi)$, onde $\sigma^{2}$ (*sill*) denota a variância dos efeitos aleatórios e $U(x;\phi)$ é a variância unitária de um Campo Gaussiano Aleatório, com função de correlação $\rho(u,\phi)$.
+
+Os efeitos aleatórios não correlacionados são dados por $\tau Z \sim N(0,\tau^{2}I)$, onde $\tau^{2}$ (*nugget*) representa as variações não espaciais e de micro escala no modelo.
+
+Um dos principais objetivos da Geoestatística é estimar o vetor $\theta = (\beta, \sigma^{2},\tau^{2}, \phi, \psi)$. Em *Model-based Geostatistics* [@Diggle_RibeiroJr_2007] é proposta uma abordagem baseada na maximização da log-verossimilhança dos modelos.
+
+## Verossimilhança marginal
+
+A aplicação de métodos baseados em verossimilhança a modelos geoestatísticos para dados não-gaussianos é complicada e possui dificuldades computacionais, que surgem devido à alta dimensionalidade do vetor de efeitos aleatórios $S(x) = \{S(x_1),S(x_2),\dots,S(x_n)\}$.
+
+A maximização da verossimilhança marginal do modelo é obtida integrando os efeitos aleatórios da distribuição conjunta, definida na @eq-vero-marg, como segue:
+
+$$
+L_{p}(\theta;y(x)) = \int_{\mathbb{R}^{n}}f(y(x)|S(x))f(S(x))dS(x)
+$$ {#eq-vero-marg-mod}
+
+## Verossimilhança Marginal
+
+Exceto nos casos em que a distribuição de $f(y(x)|S(x))$ seja gaussiana, essa verossimilhança marginal é analiticamente intratável, por se tratar do produto de duas distribuições diferentes.
+
+Como os valores do vetor $S(x)$ são correlacionados, a integral da @eq-vero-marg-mod possui tantas dimensões quanto observações na amostra coletada. Assim, métodos de integração numérica convencionais (Gauss-Hermite, quadratura gaussiana) não são computacionalmente viáveis.
+
+## Métodos Bayesianos
+
+Outros métodos para aproximar a @eq-vero-marg-mod foram propostos, e os mais prevalentes são os baseados em integração de Monte Carlo (@Geyer_Thompson_1992, @Geyer_1994 e @Zhang_2002).
+
+@Christensen_2004 descreve uma metodologia baseada em aproximações por algoritmo MCMC para simular da distribuição condicional de $S(x)$. Apesar de bem desenvolvidos, esses métodos são computacionalmente intensivos, lentos na estimação e precisam ter a convergência monitorada.
+
+## Aproximação de Laplace
+
+Em *Practical likelihood analysis for spatial generalized linear mixed models* (@Bonat_Ribeiro_2016) é proposta uma abordagem baseada na aproximação de Laplace (@Tierney_Kadane_1986), normalmente utilizada para análise de dados longitudinais.
+
+O método é utilizado para aproximar integrais da seguinte forma:
+
+$$
+\int_{\mathbb{R}^{n}}\exp{(\varrho(u)\,du)} \approx (2\pi)^{n/2} \left|-\varrho''(\hat{u})\right|^{-1/2} \exp{(\varrho(\hat{u}))}
+$$ {#eq-aprox-laplace}
+
+Em que $\varrho(u)$ é uma função unimodal e limitada de uma variável $u$ n-dimensional.
+
+## Aproximação de Laplace
+
+Assumindo que a distribuição $f(y(x)|S(x))$ seja da família exponencial, podendo ser escrita da seguinte forma:
+
+$$
+\begin{aligned}
+f(y(x)|S(x);\beta) = \exp\{&y(x)^{\top}(D\beta + S(x)) - 1^{\top} b(D\beta + S(x)) + \\
+&1^{\top} c(y(x))\}
+\end{aligned}
+$$ {#eq-fam-expo}
+
+E considerando a distribuição Normal Multivariada, definida como:
+
+$$
+f(S(x);\Sigma) = (2\pi)^{-n/2}|\Sigma|^{-1/2}\exp{\left\{-\frac{1}{2}S(x)^{\top}\Sigma^{-1}S(x)\right\}}
+$$ {#eq-normal-mult}
+
+Podemos ver que a @eq-aprox-laplace é o produto das @eq-fam-expo e @eq-normal-mult.
+
+## Aproximação de Laplace
+
+Assim, temos que a aproximação de Laplace para a log-verossimilhança do modelo é dada por:
+
+$$
+\begin{aligned}
+l(\theta;y(x)) = &\frac{n}{2}\log(2\pi) - \frac{1}{2} \log\left|\operatorname{diag}{\{b''(D\beta + \hat{s}(\theta))\}} + \Sigma^{-1}\right|  + \\
+&y(x)^{\top}(D\beta + \hat{s}(\theta)) -1^{\top} b(D\beta + \hat{s}(\theta)) + \\
+&1^{\top} c(y(x)) - \frac{n}{2} \log(2\pi) - \\
+&\frac{1}{2}\log|\Sigma| - \frac{1}{2}\hat{s}(\theta)^{\top}\Sigma^{-1}\hat{s}(\theta)
+\end{aligned}
+$$ {#eq-aprox-laplace-mod}
+
+## Otimização
+
+A otimização da @eq-aprox-laplace-mod é realizada com o modelo parametrizado como $\theta = (\beta,\log(\sigma^{2}),\log(\phi),\log(\tau^{2}),\log(\psi))$, e sendo $\hat{\theta}$ o estimador de máxima verossimilhança de $\theta$, o mesmo tem distribuição assintótica dada por:
+
+$$
+\hat{\theta} \sim N\left(\theta, I_{O}^{-1}(\hat{\theta}) \right)
+$$ {#eq-dist-assint}
+
+Com $I_{O}^{-1}(\hat{\theta})$ denotando a matriz de informação observada de $\theta$.
+
+# Implementação Computacional
+
+## Implementação Inicial
+
+Junto ao artigo *Practical likelihood analysis for spatial generalized linear mixed models*, os autores disponibilizaram o código em R utilizado para ajuste de modelos lineares generalizados geoestatísticos por meio da aproximação de Laplace.
+
+O objetivo deste trabalho é a otimização do código proposto, e posterior análise de duas bases de dados reais e um estudo de simulação, utilizando as funções criadas.
+
+## Maximização
+
+Para montar a matriz de covariância espacial $\Sigma$ dos dados (@eq-vero-marg), foi criada a função \texttt{monta.sigma}, que utiliza a função \texttt{geoR::varcov.spatial} (@Ribeiro_etal_2024).
+
+Para a maximização da @eq-aprox-laplace foi implementada a função \texttt{newton.raphson}, que se utiliza das funções auxiliares \texttt{Q.b}, \texttt{Q.b.grad} e \texttt{Q.b.hess}, que representam $\varrho(S(x))$, $\varrho'(S(x))$ e $\varrho''(S(x))$, respectivamente.
+
+## Avaliação da Log-Verossimilhança
+
+A avaliação da log-verossimilhança do modelo é feita usando a função \texttt{loglik.sglmm}, que retorna o negativo da matriz de informação observada e as estimativas dos parâmetros.
+
+Por dentro, a função \texttt{loglik.sglmm} chama a função \texttt{laplace}, que retorna a aproximação a partir dos parâmetros informados. Para que a aproximação seja eficiente, é necessário que a estimativa inicial seja suficientemente boa, por isso foi implementada a função \texttt{start.values.sglmm} para estimar $\theta$ inicial, a partir de uma heurística fornecida pelos autores.
+
+## Otimização da Log-Verossimilhança
+
+A etapa de otimização é feita pela função \texttt{bbmle::lme2} (@Bolker_2023), que faz a otimização numérica da função \texttt{loglik.sglmm}, utilizando as funções denotadas anteriormente. Tudo isso é feito dentro da função \texttt{sglmm}, que retorna uma lista com os valores de $\hat{\theta}$, os valores preditos para os efeitos aleatórios de cada ponto amostral, e o modelo maximizado (um objeto \texttt{mle2}).
+
+## Diagrama
+
+```{r}
+M <- matrix(nrow = 8, ncol = 8, byrow = T,
+            data = as.character(c(
+              #Q g h nr l ll sv sg
+              0,0,0,0,0,0,0,0, #Q
+              0,0,0,0,0,0,0,0, #g
+              0,0,0,0,0,0,0,0, #h
+              "","","",0,0,0,0,0, #nr
+              0,0,0,"Maximiza",0,0,0,0, #l
+              0,0,0,0,"Aproxima",0,0,0, #ll
+              0,0,0,0,0,0,0,0, #sv
+              0,0,0,0,0,"mle2","Estimativa_Inicial",0 #sg
+            )))
+
+nomes <- c("Q.b", "Q.b.grad", "Q.b.hess", "newton_raphson","laplace","loglik.sglmm","start.values.sglmm","sglmm")
+
+diagram::plotmat(M, pos = c(3,2,1,2), curve = F, name = nomes,
+                 box.type = "square", box.prop = 0.4,
+                 box.cex = 1, box.size = 0.12)
+```
+
+## Exemplo de Ajuste
+
+Considere o objeto \texttt{sim\_df}, que foi simulado de um processo geoestatístico de Poisson, com \texttt{x1} e \texttt{x2} sendo as coordenadas dos pontos amostrais, e \texttt{y} sendo a variável de contagem. As primeiras dez linhas de \texttt{sim\_df} são:
+
+```{r}
+#| eval: true
+#| echo: true
+head(sim_df, 5)
+```
+
+## Exemplo de Ajuste
+
+```{r}
+#|
+plot(sim)
+```
+
+## Exemplo de Ajuste
+
+As estimativas iniciais para os parâmetros são obtidas pela função \texttt{start.values.sglmm}, conforme segue:
+
+```{r}
+#| eval: true
+#| echo: true
+# Valores iniciais para theta:
+(inicial_simul <- start.values.sglmm(
+    y ~ 1,
+    family="poisson",
+    data = sim_df,
+    coords = sim_df[, 1:2],
+    nugget = T,
+    offset = rep(1, dim(sim_df)[1])
+))
+```
+
+## Exemplo de Ajuste
+
+O modelo então é ajustado pela função \texttt{sglmm}, que retorna na posição 9 o modelo estimado:
+
+```{r}
+#| echo: true
+#| eval: true
+# Ajuste do modelo:
+fit_sglmm <- sglmm(
+    y ~ 1, cov.model = "matern", kappa = 2,
+    inits = inicial_simul, data = sim_df,
+    coords = sim_df[, 1:2], nugget = T,
+    family = "poisson"
+)
+
+# Estimativas pontuais dos parâmetros:
+coef(fit_sglmm[[9]])
+```
+
+# Aplicação a Dados Reais
+
+## Base de Dados Weed
+
+A base de dados \texttt{Weed}, disponibilizada no pacote \texttt{geoCount}, consiste na contagem de ervas daninhas em uma plantação da fazenda Bjertorp, no sudoeste da Suécia. Os dados possuem as coordenadas (\texttt{x1} para L-O e \texttt{x2} para N-S), a contagem exata de ervas daninhas naquele ponto amostral, e a estimativa da contagem, obtida por meio de um software de detecção de imagens.
+
+## Base de Dados Weed
+
+```{r}
+#| fig-cap: "Gráfico da base Weed"
+#| out-width : 80%
+plot(weed_geo)
+```
+
+## Ajuste Inicial
+
+Foi realizado o ajuste utilizando a função \texttt{sglmm}, considerando a distribuição de Poisson para a resposta, com diferentes funções de covariância espacial, para verificar qual melhor ajusta os dados.
+
+## Tabela
+
+```{r}
+#| results: 'asis'
+print(mat, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F, size="\\fontsize{9pt}{10pt}\\selectfont")
+```
+
+## Anova
+
+```{r}
+#| echo: true
+anova(fit_weed_1[[9]],
+      fit_weed_1_2[[9]])
+```
+
+## Perfis de Verossimilhança
+
+```{r}
+#| fig-cap: "Perfis de Verossimilhança"
+#| out-width: 80%
+par(mfrow = c(2, 2))
+
+plot(perfil_beta0_1)
+plot(perfil_sigma_1)
+plot(perfil_phi_1)
+```
+
+## Ajuste Incorporando Coordenadas
+
+Apesar de não apresentar indícios de tendência espacial para as coordenadas, podemos incluí-las no modelo, para verificar se os efeitos estimados são significativos. De forma similar ao caso anterior, vários modelos foram ajustados, considerando diferentes funções de covariância espacial.
+
+## Tabela
+
+```{r}
+#| results: 'asis'
+print(mat_b, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F, size="\\fontsize{7pt}{10pt}\\selectfont")
+```
+
+## Perfis de Verossimilhança
+
+```{r}
+#| fig-cap: "Perfis de Verossimilhança"
+#| out-width: 80%
+par(mfrow = c(2, 3))
+plot(perfil_beta0_2, xlim = c(3, 6.5))
+plot(perfil_beta1_2, xlim = c(-0.004, 0.005))
+plot(perfil_beta2_2, xlim = c(-0.006, 0.003))
+plot(perfil_sigma_2)
+plot(perfil_phi_2)
+```
+
+## Predição Espacial
+
+Com os valores estimados pelos parâmetros, podemos realizar a predição dos valores estimados pelo modelo (considerando o com função de covariância Matèrn, $\kappa = 1$ e $\tau^{2} = 0$) em pontos não amostrados.
+
+A abordagem utilizada para a krigagem será utilizando as funções \texttt{geoR::krige.control}, \texttt{output.control} e \texttt{krige.conv}, e pode ser vista com mais detalhes em [@Diggle_RibeiroJr_2007].
+
+## Predição Espacial
+
+```{r}
+#| fig-cap: "Predição para os dados Weed"
+#| out-width: 80%
+image(pred, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(0, 200), y.leg = c(0, 30))
+```
+
+## Base de Dados SPT
+
+A base de dados \texttt{SPT} foi disponibilizada pelo aluno de mestrado em Geotecnia pela UFPR, Lucas Michael Luzzi, e consiste na sondagem SPT em pontos amostrais do Aeroporto Internacional Afonso Pena. Os valores da variável resposta são a quantidade de marteladas necessárias para compactar o solo em uma certa quantidade.
+
+A base possui 15 camadas amostrais, com profundidades crescentes. 2 delas foram escolhidas para ajustar os modelos e compará-los.
+
+## Base de Dados SPT
+
+```{r}
+#| layout-ncol: 2
+#| fig-cap:
+#|    - "Profundidade 4 metros"
+#|    - "Profundidade 13 metros"
+plot(spt_4_geo, lowess = T)
+plot(spt_13_geo, lowess = T)
+```
+
+## Boxplot
+
+```{r}
+#| fig-cap: "Boxplot de SPT pela profundidade"
+#| out-width: 80%
+boxplot(y ~ Z, data = spt, ylab = "SPT", xlab = "Profundidade")
+```
+
+## Ajustes Profundidade 4 Metros
+
+```{r}
+#| results: 'asis'
+print(mat_spt_4, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+```
+
+## Ajustes Profundidade 13 Metros
+
+```{r}
+#| results: 'asis'
+print(mat_spt_13, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+```
+
+## Perfis de Verossimilhança
+
+```{r}
+#| fig-cap: "Perfis de Verossimilhança para Z = 4"
+#| out-width: 80%
+par(mfrow = c(2, 2))
+plot(perf_b_1_4)
+plot(perf_s_1_4)
+plot(perf_p_1_4, xlim = c(-5, 0))
+```
+
+## Perfis de Verossimilhança
+
+```{r}
+#| fig-cap: "Perfis de Verossimilhança para Z = 13"
+#| out-width: 80%
+par(mfrow = c(2, 2))
+plot(perf_b_1)
+plot(perf_s_1)
+plot(perf_p_1)
+```
+
+## Predição Espacial
+
+```{r}
+#| layout-ncol: 2
+#| fig-cap:
+#|    - "Profundidade 4 metros"
+#|    - "Profundidade 13 metros"
+par(mfrow = c(1, 1))
+image(pred_4, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(-15, 0), y.leg = c(-10, -5))
+image(pred_13, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(-15, 0), y.leg = c(-10, -5))
+```
+
+# Estudo de Simulação
+
+## Estudo de Simulação
+
+Por fim, será realizado um estudo de simulação, para verificar propriedades para os estimadores obtidos pela função \texttt{sglmm}. Foi criada a função \texttt{simulation\_function}, que segue o seguinte esquema: uma *seed* para reprodução é definida, gera-se uma amostra de tamanho $n$ usando a função \texttt{geoR::grf}, utilizando os parâmetros $\theta = (\beta_0 = 2, \sigma^{2} = 0.5, \phi = 30, \tau^{2} = 0.05)$, com função de covariância espacial exponencial, em posições de uma malha irregular de $200 \times 200$.
+
+As amostras $y_{i}$ (geradas de um campo aleatório gaussiano não condicional) são usados para simular valores de uma Poisson, com $\lambda_{i} = y_{i}$.
+
+## Diferentes Tamanhos Amostrais
+
+Para explorar o comportamento do estimador para diferentes tamanhos amostrais, foram geradas 100 repetições de amostras com $n = 50,100,200$ valores.
+
+A partir dos valores simulados, podemos ver como se comportam a média e o erro quadrático médio dos estimadores, bem como sua variância e seu viés.
+
+## Diferentes Tamanhos Amostrais
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_media_n, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_eqm_n, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+## Diferentes Tamanhos Amostrais
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_var_n, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_vies_n, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+## Especificação Incorreta da Função de Covariância Espacial
+
+Foram comparados os resultados anteriores com os estimadores gerados utilizando as funções de covariância espacial Matèrn (com $\kappa = 1, 2$) e Esférica. Em todos os casos, o tamanho da amostra é de $n = 100$, e os parâmetros usados para geração são os especificados anteriormente.
+
+## Especificação Incorreta da Função de Covariância Espacial
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_media_cov, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_eqm_cov, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+## Especificação Incorreta da Função de Covariância Espacial
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_var_cov, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_vies_cov, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+## Diferentes Regiões Amostrais
+
+Por fim, foi verificado o comportamento dos estimadores quando aumentamos e diminuímos a região da qual a amostra é coletada. Foram simulados em uma malha menor (50 x 50, com dados mais "densos") e uma maior (500 x 500, com dados mais "esparsos"), para conferir o comportamento dos estimadores.
+
+## Diferentes Regiões Amostrais
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_media_grid, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_eqm_grid, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+## Diferentes Regiões Amostrais
+
+```{r}
+#| layout-nrow: 2
+#| results: 'asis'
+print(mat_var_grid, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+print(mat_vies_grid, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = T)
+```
+
+# Considerações Finais
+
+## Considerações Finais
+
+Como visto, os estimadores obtidos por meio da aproximação de Laplace possuem propriedades estatísticas ótimas, como o não-viés assintótico e ser erro quadrático médio consistente, além de vantagens computacionais sobre os ajustes baseados no paradigma bayesiano.
+
+Ainda que seja computacionalmente intensivo, o ajuste é obtido por uma maximização de alta dimensionalidade, que pode ser resolvida por diversas heurísticas além das apresentadas neste trabalho.
+
+## Considerações Finais
+
+O ajuste às bases de dados reais foi satisfatória, sendo possível comparar os diferentes modelos ajustados de maneira direta, por meio do valor retornado pela log-verossimilhança, e pelo teste de razão de verossimilhança para considerar a inclusão de variáveis no modelo.
+
+# Referências {.allowframebreaks}
+
+::: {#refs}
+:::

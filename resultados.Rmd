@@ -1,0 +1,300 @@
+## Estudo de simulação
+
+Foi realizado um estudo de simulação, para verificar as propriedades para os estimadores obtidos pela função \texttt{sglmm}, seguindo o seguinte esquema para simulação: uma *seed* para reprodução é definida, gera-se uma amostra de tamanho $n$ usando a função \texttt{geoR::grf}, utilizando os parâmetros $\theta = (\beta_0 = 2, \sigma^{2} = 0.5, \phi = 30, \tau^{2} = 0.05)$, com função de covariância espacial exponencial, em posições de uma malha irregular de $200 \times 200$. As amostras $y_{i}$ (geradas de um campo aleatório gaussiano não condicional) são usados para simular valores de uma Poisson, com $\lambda_{i} = y_{i}$.
+
+Esses valores simulados da Poisson são então usados para gerar um vetor inicial de estimativas usando a função \texttt{start.values.sglmm}, que serão usados para ajustar o modelo usando a função \texttt{sglmm}. A simulação, ao fim, irá retornar apenas as estimativas pontuais dos modelos ajustados.
+
+### Diferentes tamanhos amostrais
+
+Para explorar o comportamento dos estimadores para diferentes tamanhos amostrais, foram geradas 1000 repetições de amostras com $n = 50,100,200$ valores. A partir dos valores simulados, podemos ver como se comportam a média e o erro quadrático médio dos estimadores, bem como sua variância e seu viés.
+
+```{r resultadosn, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, "$\\sigma^{2} = 0.5$", NA, NA,
+                            "$\\phi = 30$", NA, NA, "$\\tau^{2} = 0.05$", NA, NA),
+            n = c(rep(c("$n = 50$", "$n = 100$", "$n = 200$"), 4)),
+            `Média` = c(media_n[, 1], media_n[, 2], media_n[, 3], media_n[, 4]),
+            `Variância` = c(var_n[, 1], var_n[, 2], var_n[, 3], var_n[, 4]),
+            `EQM` = c(eqm_n[, 1], eqm_n[, 2], eqm_n[, 3], eqm_n[, 4]),
+            `Viés` = c(vies_n[, 1], vies_n[, 2], vies_n[, 3], vies_n[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores para diferentes tamanhos de amostras",
+        label = "tab:estamo"
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 3, 6, 9, 12)
+)
+```
+
+Pela tabela \@ref(tab:estamo) podemos ver que a média dos estimadores se aproximam dos valores reais dos parâmetros que geraram as amostras, e se tornam mais precisos conforme o tamanho da amostra cresce. De maneira similar, podemos ver que tanto o erro quadrático médio quanto a variância dos estimadores diminui conforme o tamanho da amostra cresce. Além disso, o viés dos estimadores (com exceção de $\hat{\phi}$) são próximos de zero, condizendo com o não-viés assintótico dos estimadores por máxima verossimilhança.
+
+Esses resultados obtidos podem ser comparados com as estimativas geradas utilizando algoritmos MCMC para máxima verossimilhança, por meio das funções do pacote \texttt{geoRglm} (\citeonline{Christensen_Ribeiro_2004}), apresentadas na tabela \@ref(tab:estamomcmc).
+
+```{r resultadosnmcmc, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, "$\\sigma^{2} = 0.5$", NA, NA,
+                            "$\\phi = 30$", NA, NA, "$\\tau^{2} = 0.05$", NA, NA),
+            n = c(rep(c("$n = 50$", "$n = 100$", "$n = 200$"), 4)),
+            `Média` = c(media_n_mcmc[, 1], media_n_mcmc[, 2], media_n_mcmc[, 3], media_n_mcmc[, 4]),
+            `Variância` = c(var_n_mcmc[, 1], var_n_mcmc[, 2], var_n_mcmc[, 3], var_n_mcmc[, 4]),
+            `EQM` = c(eqm_n_mcmc[, 1], eqm_n_mcmc[, 2], eqm_n_mcmc[, 3], eqm_n_mcmc[, 4]),
+            `Viés` = c(vies_n_mcmc[, 1], vies_n_mcmc[, 2], vies_n_mcmc[, 3], vies_n_mcmc[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores MCMC para diferentes tamanhos de amostras",
+        label = "tab:estamomcmc",
+        auto = T
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 3, 6, 9, 12)
+)
+```
+
+Não há diferença muito aparente entre os estimadores obtidos para $\beta_0$ e $\sigma^{2}$, com ambas as metodologias obtendo estimativas consistentes, com baixa variância e não-viesadas. Para $\phi$, ambas estimam com algum grau de viés, mas com a estimativa por aproximação de Laplace diminuindo o viés conforme o tamanho da amostra aumenta, enquanto a estimativa por MCMC aumenta conforme o tamanho de amostra cresce.
+
+Por fim, a estimativa de $\tau^{2}$ é consistente e não-viesada independentemente do tamanho da amostra utilizando a aproximação de Laplace, enquanto que a estimativa por MCMC é viesada para pequenas amostras, sendo corrigida para amostras maiores. A grande diferença entre as estimativas é o tempo computacional utilizado para ajuste, com a simulação utilizando a função \texttt{sglmm} demorando 3, 6.8 e 22.8 minutos para ajustar as 1000 repetições de tamanho $n = 50, 100, 200$ respectivamente, enquanto que a simulação utilizando as funções do pacote \texttt{geoRglm} demoraram 12.6, 42.5 e 135.4 minutos para ajustar as 1000 repetições.
+
+### Especificação incorreta da função de correlação espacial
+
+Foram comparados os resultados anteriores com os estimadores gerados utilizando as funções Matèrn (com $\kappa = 1, 2$) e Esférica. Em todos os casos, o tamanho da amostra é de $n = 100$, e os parâmetros usados para geração são os especificados anteriormente. Os resultados serão comparados com as estimativas considerando a função de correlação espacial correta (exponencial), já apresentados na tabela\@ref(tab:estamo).
+
+```{r resultadoscov, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, NA, "$\\sigma^{2} = 0.5$", NA, NA, NA,
+                            "$\\phi = 30$", NA, NA, NA, "$\\tau^{2} = 0.05$", NA, NA, NA),
+            `Correlação` = c(rep(c("Exponencial", "$\\text{Matèrn, }\\kappa = 1$", "$\\text{Matèrn, }\\kappa = 2$", "Esférica"), 4)),
+            `Média` = c(media_cov[, 1], media_cov[, 2], media_cov[, 3], media_cov[, 4]),
+            `Variância` = c(var_cov[, 1], var_cov[, 2], var_cov[, 3], var_cov[, 4]),
+            `EQM` = c(eqm_cov[, 1], eqm_cov[, 2], eqm_cov[, 3], eqm_cov[, 4]),
+            `Viés` = c(vies_cov[, 1], vies_cov[, 2], vies_cov[, 3], vies_cov[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores para diferentes funções de covariância",
+        label = "tab:estcov",
+        auto = T
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 4, 8, 12, 16)
+)
+```
+
+Pela tabela \@ref(tab:estcov) podemos ver que a especificação incorreta da função de correlação espacial impacta significativamente as estimativas obtidas para o parâmetro $\phi$, com o viés pelas especificações por Matèrn crescendo conforme $\kappa$ cresce (o que é esperado, visto que a exponencial é um caso particular da Matèrn, com $\kappa = 0.5$) e com a esférica estimando muito acima do verdadeiro valor. Novamente, comparemos com os valores estimados por algoritmos MCMC, presentes na tabela \@ref(tab:estcovmcmc).
+
+```{r resultadoscovmcmc, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, NA, "$\\sigma^{2} = 0.5$", NA, NA, NA,
+                            "$\\phi = 30$", NA, NA, NA, "$\\tau^{2} = 0.05$", NA, NA, NA),
+            `Correlação` = c(rep(c("Exponencial", "$\\text{Matèrn, }\\kappa = 1$", "$\\text{Matèrn, }\\kappa = 2$", "Esférica"), 4)),
+            `Média` = c(media_cov_mcmc[, 1], media_cov_mcmc[, 2], media_cov_mcmc[, 3], media_cov_mcmc[, 4]),
+            `Variância` = c(var_cov_mcmc[, 1], var_cov_mcmc[, 2], var_cov_mcmc[, 3], var_cov_mcmc[, 4]),
+            `EQM` = c(eqm_cov_mcmc[, 1], eqm_cov_mcmc[, 2], eqm_cov_mcmc[, 3], eqm_cov_mcmc[, 4]),
+            `Viés` = c(vies_cov_mcmc[, 1], vies_cov_mcmc[, 2], vies_cov_mcmc[, 3], vies_cov_mcmc[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores MCMC para diferentes funções de covariância",
+        label = "tab:estcovmcmc"
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 4, 8, 12, 16)
+)
+```
+
+Nesse caso, é possível perceber que as estimativas para as funções de correlação espacial Matèrn foram piores do que a esférica, com viéses muito maiores do que os apresentados na tabela \@ref(tab:estcov) e valores para o alcance $\phi$ muito acima do valor real (30). Percebe-se também que, apesar de ter sido especificado que havia efeito de pepita ($\tau^{2}$), as funções para estimação por MCMC estimaram todos os mil modelos com $\tau^{2} = 0$.
+
+### Diferentes regiões amostrais
+
+Por fim, foi verificado o comportamento dos estimadores quando aumentamos e diminuímos a região da qual a amostra é coletada. Os dados foram simulados em uma malha menor ($50 \times 50$) e uma maior ($500 \times 500$), para conferir o comportamento dos estimadores.
+
+```{r resultadosgrid, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, "$\\sigma^{2} = 0.5$", NA, NA,
+                            "$\\phi = 30$", NA, NA, "$\\tau^{2} = 0.05$", NA, NA),
+            `Malha` = c(rep(c("$50 \\times 50$", "$200 \\times 200$", "$500 \\times 500$"), 4)),
+            `Média` = c(media_grid[, 1], media_grid[, 2], media_grid[, 3], media_grid[, 4]),
+            `Variância` = c(var_grid[, 1], var_grid[, 2], var_grid[, 3], var_grid[, 4]),
+            `EQM` = c(eqm_grid[, 1], eqm_grid[, 2], eqm_grid[, 3], eqm_grid[, 4]),
+            `Viés` = c(vies_grid[, 1], vies_grid[, 2], vies_grid[, 3], vies_grid[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores para diferentes regiões amostrais",
+        label = "tab:estgrid"
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 3, 6, 9, 12)
+)
+```
+
+Novamente, comparemos com os valores estimados por algoritmos MCMC, presentes na tabela \@ref(tab:estgridmcmc).
+
+```{r resultadosgridmcmc, results = 'asis'}
+print(
+    xtable(
+        data.frame(
+            `Parâmetro` = c("$\\beta_{0} = 2$", NA, NA, "$\\sigma^{2} = 0.5$", NA, NA,
+                            "$\\phi = 30$", NA, NA, "$\\tau^{2} = 0.05$", NA, NA),
+            `Malha` = c(rep(c("$50 \\times 50$", "$200 \\times 200$", "$500 \\times 500$"), 4)),
+            `Média` = c(media_grid_mcmc[, 1], media_grid_mcmc[, 2], media_grid_mcmc[, 3], media_grid_mcmc[, 4]),
+            `Variância` = c(var_grid_mcmc[, 1], var_grid_mcmc[, 2], var_grid_mcmc[, 3], var_grid_mcmc[, 4]),
+            `EQM` = c(eqm_grid_mcmc[, 1], eqm_grid_mcmc[, 2], eqm_grid_mcmc[, 3], eqm_grid_mcmc[, 4]),
+            `Viés` = c(vies_grid_mcmc[, 1], vies_grid_mcmc[, 2], vies_grid_mcmc[, 3], vies_grid_mcmc[, 4])
+        ),
+        digits = 4,
+        align = "l|l|lrrrr|",
+        caption = "Estimadores MCMC para diferentes regiões amostrais",
+        label = "tab:estgridmcmc"
+    ),
+    sanitize.text.function = identity,
+    sanitize.colnames.function = identity,
+    include.rownames = F,
+    hline.after = c(-1, 0, 3, 6, 9, 12)
+)
+```
+
+Pode-se perceber com a tabela \@ref(tab:estgrid) que o aumento no espaço para a amostra faz com que ocorra um aumento no erro para a estimação de $\tau^{2}$. Isso era esperado, pois o efeito de pepita é mais fácil de estimar quanto mais densa for a distribuição dos dados no espaço (\citeonline{Isaaks_Srivastava_1989}). Além disso, a estimação de $\phi$ novamente é afetada, pois para regiões muito pequenas os pontos amostrais estão muito próximos, subestimando o valor de $\phi$, enquanto que no caso contrário os pontos podem estar afastados demais, o que faz com que a correlação seja superestimada.
+
+A diferença entre as estimativas por aproximação de Laplace e MCMC está no efeito de pepita $\tau^{2}$, em que o método por MCMC superestimou o valor em todos os casos, além de ter tido viés maior em quase todas as estimativas. Vale citar, que em todos os casos, o tempo computacional necessário para as simulações foi muito maior para os algoritmos MCMC do que para a função \texttt{sglmm}.
+
+## Ajuste à base de dados Weed
+
+O objetivo da modelagem para a base de dados \texttt{Weed} é poder mapear a propensão de ervas daninhas na região do estudo por meio das contagens realizadas nos pontos amostrais. Assim, é possível fazer a aplicação de herbicidas de maneira localizada, em regiões com altas contagens, ao invés de aplicar em toda a região, poupando recursos no combate às ervas daninhas.
+
+Como visto anteriormente, a ditribuição da contagem é bastante assimétrica, e por se tratar de uma variável discreta, a modelagem seguindo a distribuição Normal não é a mais correta. Portanto, foram ajustados modelos espaciais lineares mistos generalizados, considerando duas distribuições: a Poisson e a Binomial Negativa.
+
+### Ajustes considerando distribuição Poisson
+
+Foram ajustados modelos apenas com o intercepto ($\beta = (\beta_{0})$), e diferentes modelos de covariância espacial, inclusão de efeito de pepita (*nugget*), para verificar o que melhor se ajusta aos dados. Para cada um deles, temos as estimativas pontuais dos parâmetros ($\theta = (\beta,\sigma^{2},\phi,\tau^{2})$), bem como o valor da log-verossimilhança, que será usado para seleção do modelo.
+
+O seguinte código em R mostra o esquema de modelagem para um desses modelos, considerando que há efeito de pepita (\texttt{nugget = T}), distribuição Poisson para a resposta (\texttt{family = "poisson"}), modelo somente com o intercepto (a fórmula para o modelo é \texttt{y ~ 1}, com \texttt{y} sendo o nome da coluna com a variável resposta) e função de correlação espacial Matèrn, com $\kappa = 1$:
+
+```{r exemplopois, eval = F, echo = T}
+# Valores iniciais:
+theta_ini <- start.values.sglmm(y ~ 1, data = Weed, family = "poisson",
+                                coords = Weed[, 1:2], nugget = T)
+
+# Modelo:
+ajuste_weed_1 <- sglmm(y ~ 1, data = Weed, coords = Weed[, 1:2],
+                       family = "poisson", inits = theta_ini, nugget = T,
+                       cov.model = "matern", kappa = 1)
+```
+
+A tabela \@ref(tab:parmodelos) indica os modelos ajustados, as estimativas (pontuais) dos parâmetros e o valor da log-verossimilhança maximizada. Por meio dela, é possível verificar que, nos modelos que incorporam apenas o intercepto, o que teve melhor ajuste é o com função de covariância espacial esférica e efeito de pepita ($\tau^{2}$).
+
+```{r parmodelos, results='asis', }
+print(mat, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+```
+
+Podemos perceber que não houve muita diferença nos valores da log-verossimilhança entre os modelos com $\tau^{2}$ e os sem, pois as estimativas pontuais para o mesmo foram muito próximas de zero. Portanto, iremos considerar os modelos sem efeito de pepita, dentre os quais, o com função de covariância espacial Matèrn, com $\kappa = 1$ é o que tem menor log-verossimilhança. Para corroborar essa decisão, podemos aplicar o teste da razão de verossimilhanças, por meio da função \texttt{anova} nos modelos com e sem efeito de pepita:
+
+```{r anovapoisson}
+anova(fit_weed_1[[9]], fit_weed_1_2[[9]])
+```
+
+Como o resultado foi não significativo para a inclusão do efeito de pepita, manteremos o modelo mais parcimonioso. Para além das estimativas pontuais, podemos obter intervalos de confiança para os parâmetros por meio do perfilhamento da verossimilhança, utilizando a função \texttt{stats::profile}. Com essa abordagem, podemos verificar como cada estimativa se comporta quando fixamos as demais nas estimativas de máxima verossimilhança, podendo assim verificar possíveis assimetrias em algum dos parâmetros, muito comuns naqueles que estimam a variância (como $\sigma^{2}$ e $\tau^{2}$, no caso de modelos espaciais lineares mistos generalizados). Os perfis para cada parâmetro estimado pelo modelo são apresentados na figura \@ref(fig:plotperf1).
+
+```{r plotperf1, fig.cap='Perfis de verossimilhança',fig.pos="!h", warning = F, message = F}
+par(mfrow = c(2, 2))
+plot(perfil_beta0_1, xlab = expression(beta[0]), main = expression(paste("Perfil de Verossimilhança : ", beta[0])))
+plot(perfil_sigma_1, xlab = expression(sigma^2), main = expression(paste("Perfil de Verossimilhança : ", sigma^2)))
+plot(perfil_phi_1, xlab = expression(phi), main = expression(paste("Perfil de Verossimilhança : ", phi)))
+```
+
+### Ajustes considerando distribuição Binomial Negativa
+
+Podemos comparar esses resultados com os ajustes para modelos que consideram que os dados seguem uma distribuição binomial negativa, que incorpora mais um parâmetro a ser estimado: $\psi$, que é um parâmetro de precisão necessário para o ajuste do modelo. Os resultados são apresentados na tabela \@ref(tab:parmodelosnb).
+
+```{r parmodelosb, results='asis'}
+print(mat_nb, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+```
+
+Dentre os modelos apresentados, o que tem melhor ajuste o com função de correlação esférica e com efeito de pepita ($\tau^{2}$), ainda que pequeno. Assim como no caso anterior, podemos realizar o teste da razão de verossimilhanças para avaliar a inclusão desse parâmetro no modelo:
+
+```{r anovabn}
+anova(fit_weed_esf_nb[[9]], fit_weed_esf_2_nb[[9]])
+```
+
+Novamente, a inclusão do efeito de pepita não é estatisticamente significativo, então permanecemos com o modelo mais parcimonioso. Podemos perfilhar a verossimilhança para encontrar as estimativas intervalares, como visto na figura \@ref(fig:plotperf2).
+
+```{r plotperf2, fig.cap='Perfis de verossimilhança',fig.pos="!h", warning = F, message = F}
+par(mfrow = c(2, 2))
+plot(p_b_0, xlab = "Intercepto", main = expression(paste("Perfil de Verossimilhança : ", beta[0])))
+plot(p_s_0, xlab = expression(log(sigma^2)), main = expression(paste("Perfil de Verossimilhança : ", log(sigma^2))))
+plot(p_ph_0, xlab = expression(log(phi)), main = expression(paste("Perfil de Verossimilhança : ", log(phi))))
+plot(p_pr_0, xlab = expression(log(psi)), main = expression(paste("Perfil de Verossimilhança : ", log(psi))), xlim = c(0, 10))
+```
+
+Com a estimativa intervalar dos parâmetros, podemos ver que há uma assimetria bem pronunciada para a variável de precisão $\psi$, além de que nesse caso temos um valor estimado para o alcance $\phi$ maior do que para o modelo Poisson.
+
+### Predição espacial
+
+Podemos realizar predição espacial para os pontos não obsevados por meio de krigagem, utilizando as estimativas dos parâmetros retornados pelo modelo. Ficamos com o modelo considerando a distribuição de Poisson, pois o mesmo é mais simples (possui um parâmetro a menos) e a diferença na log-verossimilhança não foi significativa. Para realizar a predição nos demais pontos amostrais, serão utilizadas as funções \texttt{geoR::pred\_grid} para criar o *grid* de predição, \texttt{geoR::krige.control} e \texttt{geoR::output.control} para controlar a krigagem e a saída das funções e \texttt{geoR::krige.conv} para realizar a krigagem convencional.
+
+```{r krig1, fig.cap='Predição espacial para dados Weed',fig.pos="!h", warning = F, message = F}
+image(pred, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(0, 200), y.leg = c(0, 30))
+```
+
+É possível verificar que a superfície (contínua) se assemelha aos valores coletados na amostra, indicando que os pontos mais escuros possuem uma contagem de ervas daninhas mais alta do que nos pontos mais claros. Assim, é possível identificar regiões problemáticas para aplicação de herbicidas de maneira localizada.
+
+## Ajuste à base de dados SPT
+
+Foram ajustados modelos que levam em consideração apenas o intercepto ($\beta = (\beta_{0})$), e diferentes modelos de covariância espacial, com e sem a inclusão de efeito de pepita (*nugget*), para verificar o que melhor se ajusta aos dados. Para cada um deles, temos as estimativas pontuais dos parâmetros ($\theta = (\beta,\sigma^{2},\phi,\tau^{2})$), bem como o valor da log-verossimilhança, que será usado para seleção do modelo.
+
+```{r parmodelosspt, results='asis'}
+print(mat_spt_4, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+
+print(mat_spt_13, sanitize.text.function = identity,
+      sanitize.colnames.function = identity,
+      include.rownames = F)
+```
+
+As tabelas \@ref(tab:parmodelosspt4) e \@ref(tab:parmodelosspt13) apresentam os modelos ajustados, as estimativas pontuais e o valor da log-verossimilhança retornado pelo modelo. Avaliando a log-verossimilhança para os modelos ajustados para a profundidade 4 metros, podemos ver que todos retornaram valores muito semelhantes, enquanto que os modelos para a profundidade de 13 metros possuem log-verossimilhanças bem diferentes. Por isso, ficaremos com o modelo com função de correlação espacial Matèrn, com $\kappa = 2$ e efeito de pepita para a profundidade 4 metros e com o modelo com função de correlação espacial Matèrn, com $\kappa = 2$ e sem efeito de pepita para a profundidade 13 metros.
+
+Há uma diferença notável nos valores estimados para os interceptos, que indica que $y$ aumenta conforme a profundidade aumenta. Além disso, há também diferença nos valores de $\hat{\phi}$, em que o modelo para a profundidade 4 metros é `r as.numeric(mod_2_4_nug[[6]])[2]`, enquanto que para a profundidade 13 metros é `r as.numeric(mod_2[[6]])[2]`. Ou seja, os pontos nas profundidades mais superficiais são mais correlacionados entre si do que os pontos mais profundos, um indicativo que o solo profundo é muito diverso, podendo ser originário de diferentes épocas que sofreram compactação.
+
+### Predição espacial
+
+Novamente, performaremos a predição espacial utilizando krigagem, para comparar as duas profundidades. Foi construído um grid para predição, e a interpolação foi realizada por meio das funções do pacote \texttt{geoR}, como mencionadas anteriormente.
+
+```{r krigspt, fig.cap='Predição espacial para as duas profundidades', warning = F, message = F, fig.show='hold', out.width="49%", out.height="30%"}
+par(mfrow = c(1, 1))
+image(pred_4, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(-15, 0), y.leg = c(-5, -3), main = "Profundidade 4 metros")
+image(pred_13, col = hcl.colors(20, "blues", rev = T),
+      x.leg = c(-15, 0), y.leg = c(-5, -3), main = "Profundidade 13 metros")
+```
+
+Percebemos que a predição para essas duas profundidades diferem muito na maneira como os valores preditos se comportam. Como o valor do alcance estimado para a profundidade 4 é muito grande (em relação à escala dos dados), temos que a correlação entre os pontos é muito grande, o que indica a quase uniformidade de valores estimados pela krigagem.
+
+Já para a profundidade 13 metros podemos perceber a alta variabilidade no processo que gera os dados, que possui uma região com valores tipicamente maiores (à direita) e outros com valores menores (à esquerda). Com essa modelagem, é possível determinar que a região à direita possui valores maiores para a contagem na sondagem SPT, indicando um solo mais compactado e mais duro, informação essa que pode ajudar no planejamento geotécnico das construções do Aeroporto.

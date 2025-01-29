@@ -1,0 +1,57 @@
+---
+title: "Estimação por máxima verossimilhança em modelos espaciais lineares mistos generalizados baseada na aproximação de Laplace"
+subtitle: "Orientador : Paulo Justiniano Ribeiro Júnior"
+author:
+  - Caio Gomes Alves
+date: "02/08/2024"
+title_graphic_width: 0.3
+toc: true # show the outline slide
+pagenumber: true
+total_pagenumber_right: true
+total_pagenumber_left: false
+show_total_pagenumber: true
+# total_pagenumber: 14 # customize the total slide number
+navigation_empty: true
+aspectratio: 169 # 1610, 149, 54, 43 and 32
+fontsize: 10pt
+notes: hide # hide, show, only, onlyslideswithnotes
+note_page: plain # default compress plain
+header-includes:
+  - \newcommand{\ct}{\tiny \textcolor{gray}}
+output:
+  beamer_presentation:
+    includes:
+        in_header: tex/header.tex
+    template: tex/beamer.tex
+    keep_tex: yes
+    latex_engine: "xelatex"
+    slide_level: 2
+    # incremental: true
+    # fig_width: 6
+    # fig_height: 4.5
+    # fig_crop: true
+    # fig_caption: true
+    # dev: pdf
+    # df_print: default # default kable tibble
+    # highlight: default # default tango pygments kate monochrome espresso zenburn haddock
+    theme: "CambridgeUS" # available themes: annarbor antibes bergen berkeley berlin boadilla boxes cambridgeus copenhagen darmstadt default dresden frankfurt goettingen hannover ilmenau juanlespins luebeck madrid malmoe marburg montpellier paloalto pittsburgh rochester singapore szeged warsaw (see <https://hartwork.org/beamer-theme-matrix>)
+    colortheme: "dolphin" # available color theme: default	albatross	beaver	beetle	crane	dolphin	dove	fly	lily	orchid	rose	seagull	seahorse	whale	wolverine.
+    fonttheme: "professionalfonts" # available font themes: default professionalfonts serif structurebold structureitalicserif structuresmallcapsserif (see <http://deic.uab.es/~iblanes/beamer_gallery/index_by_font.html>)
+bibliography: bib/ref.bib
+biblio-title: Referências
+---
+
+# Slide de Exemplo
+
+## Slide de exemplo
+
+Texto
+
+\begin{equation}
+\label{teste}
+\int_{a}^{b}e^x dx = e^{b}-e^{a}
+\end{equation}
+
+Podemos ver que a equação \ref{teste} é um teste. [@Weston_2022].
+
+# Referências

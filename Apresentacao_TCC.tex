@@ -1,0 +1,144 @@
+\documentclass[10pt,ignorenonframetext,aspectratio=169,notes=hide,]{beamer}
+
+% fix the Pandoc 2.8 error "! LaTeX Error: Environment cslreferences undefined."
+% see <https://github.com/rstudio/rmarkdown/issues/1649>
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newenvironment{cslreferences}%
+  {}%
+  {\par}
+
+\usetheme{CambridgeUS}
+\usecolortheme{dolphin}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\usepackage{amssymb,amsmath}
+
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\usepackage{lmodern}
+%\usepackage{xecjk}
+\ifxetex
+  \usepackage{fontspec,xltxtra,xunicode}
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\else
+  \ifluatex
+    \usepackage{fontspec}
+    \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+    \newcommand{\euro}{€}
+  \else
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+      \fi
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{\usepackage{microtype}}{}
+\usepackage{url}
+
+% Comment these out if you don't want a slide with just the
+% part/section/subsection/subsubsection title:
+\AtBeginPart{
+  \let\insertpartnumber\relax
+  \let\partname\relax
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \let\insertsectionnumber\relax
+  \let\sectionname\relax
+  \frame{\sectionpage}
+}
+\AtBeginSubsection{
+  \let\insertsubsectionnumber\relax
+  \let\subsectionname\relax
+  \frame{\subsectionpage}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+\usepackage{amsmath}
+\usepackage{soul}
+
+\newenvironment{CSLReferences}%
+  {}%
+  {\par}
+\newcommand{\ct}{\tiny \textcolor{gray}}
+
+\title{Estimação por máxima verossimilhança em modelos espaciais
+lineares mistos generalizados baseada na aproximação de Laplace}
+\subtitle{Orientador : Paulo Justiniano Ribeiro Júnior}
+\author[]{Caio Gomes Alves}
+
+
+%\setbeamertemplate{footline}[page number]
+\defbeamertemplate*{footline}{shadow theme}
+{%
+  \leavevmode%
+  \hbox{\begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\hfill\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle\hfill\insertframenumber\,/\,\inserttotalframenumber%
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{note page}[plain]
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Sumário}
+\tableofcontents
+\end{frame}
+\section{Slide de Exemplo}\label{slide-de-exemplo}
+
+\begin{frame}{Slide de exemplo}
+\phantomsection\label{slide-de-exemplo-1}
+Texto
+
+\begin{equation}
+\label{teste}
+\int_{a}^{b}e^x dx = e^{b}-e^{a}
+\end{equation}
+
+Podemos ver que a equação \ref{teste} é um teste. (Corporation and
+Weston 2022).
+\end{frame}
+
+\section*{Referências}\label{referuxeancias}
+\addcontentsline{toc}{section}{Referências}
+
+\begin{frame}{Referências}
+\phantomsection\label{refs}
+\begin{CSLReferences}{1}{0}
+\bibitem[\citeproctext]{ref-Weston_2022}
+Corporation, Microsoft, and Steve Weston. 2022. \emph{doParallel:
+Foreach Parallel Adaptor for the 'Parallel' Package}.
+\url{https://CRAN.R-project.org/package=doParallel}.
+
+\end{CSLReferences}
+\end{frame}
+
+\end{document}
+
+\usepackage{amsmath}
+\usepackage{soul}
+\usepackage{bibentry}
+\usepackage{hyperref}
+
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newenvironment{CSLReferences}%
+  {}%
+  {\par}

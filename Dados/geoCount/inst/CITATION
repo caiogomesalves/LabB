@@ -1,0 +1,20 @@
+citHeader("To cite geoCount in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{geoCount}: An {R} Package for the Analysis of Geostatistical Count Data",
+  author       = personList(as.person("Liang Jing"),
+                   person("Victor", "De Oliveira")),
+  journal      = "Journal of Statistical Software",
+  year         = "2015",
+  volume       = "63",
+  number       = "11",
+  pages        = "1--33",
+  url          = "http://www.jstatsoft.org/v63/i11/",
+
+  textVersion  =
+  paste("Liang Jing, Victor De Oliveira (2015).",
+        "geoCount: An R Package for the Analysis of Geostatistical Count Data.",
+        "Journal of Statistical Software, 63(11), 1-33.",
+        "URL http://www.jstatsoft.org/v63/i11/.")
+)
+

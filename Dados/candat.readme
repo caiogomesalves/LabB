@@ -1,0 +1,57 @@
+CANDAT.gz is a gzipped version of the full Ohio county-level cancer
+mortality data (ie, not yet aggregated over age brackets), originally
+compiled by Owen Devine.  Best reference for this dataset might be:
+
+Xia, H. and Carlin, B.P. (1998),
+``Spatio-temporal models with errors in covariates:  
+Mapping Ohio lung cancer mortality,''
+{\em Statistics in Medicine}, {\bf 17}, 2025--2043.
+
+Amongst other things, this paper includes the U.S. Standard million
+age distribution (1970), which can be used to age-standardize the rates.
+
+**********
+
+Description of ASCII file for Ohio county-level cancer mortality data
+
+ASCII II comma deliminated file
+Data dictionary for cancer deaths in Ohio 1968-1988.
+
+
+
+field 1 = 5 digit county FIPS code
+
+field 2 = cancer site               Revision of the International
+                                   Classification of Diseases
+                                        8th            9th
+                                   (1968-1978)       (1979-1988) 
+      
+           4=trachea,bronchus,lung     162                162
+
+           7=leukemia              204-207        202.4,203.1
+                                                    204-208
+
+field 3 = year of death
+
+field 4 = sex
+           1=male
+           2=female
+
+field 5 = age at death
+          1 = 0-4             7 = 45-54           
+          2 = 5-9             8 = 55-64
+          3 = 10-14           9 = 65-74
+          4 = 15-24          10 = 75-84 
+          5 = 25-34          11 = 85 +  
+          6 = 35-44
+
+field 6 = race
+          1 = white
+          2 = non-white
+
+field 7 = total number of deaths
+
+field 8 = total population
+
+Note: Death counts and population estimates are from the NCHS Compressed
+      Mortality File.  

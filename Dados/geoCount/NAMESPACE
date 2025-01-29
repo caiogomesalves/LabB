@@ -1,0 +1,3 @@
+import(Rcpp)
+useDynLib(geoCount)
+exportPattern("^[[:alpha:]]+")

@@ -1,0 +1,71 @@
+## Funções para ajuste
+
+Em \citeonline{Bonat_Ribeiro_2016}, os autores disponibilizam as funções na linguagem de programação R para ajuste de **SGLMMs** por meio do link [http://leg.ufpr.br/doku.php/publications:papercompanions:sglmm](http://leg.ufpr.br/doku.php/publications:papercompanions:sglmm), no arquivo \texttt{functionssglmm.r}, e as utilizam para ajustar dois modelos, um Binomial e outro Poisson a dois conjuntos de dados.
+
+Para os modelos ajustados, é necessário construir a matriz de covariância $\Sigma$ para os dados, que é feito pela função \texttt{monta.sigma} que se utiliza da função \texttt{geoR::varcov.spatial} para calcular a matriz de covariância espacial, dados os parâmetros especificados.
+
+A implementação do algoritmo de maximização por Newton-Raphson foi feita por meio da função \texttt{newton.raphson} e para sua utilização é necessário conhecer $\varrho(S(x))$, o integrando da verossimilhança marginal, que depende da distribuição dos dados, bem como seu gradiente $\varrho'(S(x))$ e hessiano $\varrho''(S(x))$.
+
+Como o objetivo é estimar para dados não-gaussianos, os mesmos foram implementados por meio das funções \texttt{Q.b}, \texttt{Q.b.grad} e \texttt{Q.b.hess} (respectivamente). As distribuições que foram incluídas são a Binomial, Poisson, Binomial Negativa, Gamma e Beta, (calculadas conforme \@ref(eq:qsx)).
+
+Para a avaliação da aproximação de Laplace, foi implementada a função \texttt{laplace}, que recebe \texttt{Q.b}, \texttt{Q.b.grad} e \texttt{Q.b.hess} e o otimizador escolhido, podendo ser \texttt{"BFGS"}, que usará a função \texttt{optim} para otimizar o vetor de parâmetros, ou \texttt{"NR"}, para utilizar a função \texttt{newton.raphson} para otimizar.
+
+A partir disso, a função \texttt{laplace} é incluída na função \texttt{loglik.sglmm}, que é responsável pela avaliação da log-verossimilhança do modelo, retornando o negativo da matriz de informação observada.
+
+Como especificado anteriormente, para a aproximação de Laplace ser computacionalmente eficiente, é necessário que os valores iniciais dos parâmetros sejam uma boa estimativa. Para tal, a função \texttt{start.values} ajusta um modelo linear generalizado para os dados, considerando a distribuição estipulada (podendo ser Binomial, Poisson, Gamma, Binomial Negativa e Beta) e retorna transformações das estimativas como valores iniciais para $\hat{\theta}$.
+
+A função que estima os parâmetros do modelo é \texttt{sglmm}, que utiliza a função \texttt{bbmle::mle2} para maximizar a log-verossimilhança dada por \texttt{loglik.sglmm}. Ela retorna uma lista, com $\hat{\theta}$, os valores preditos para os efeitos aleatórios de cada ponto amostral e o modelo maximizado, que possibilita explorar propriedades dos estimadores intervalares, como intervalos de confiança e o perfil de verossimilhança de cada parâmetro. O esquema geral do funcionamento das funções é apresentado no diagrama da Figura \@ref(fig:diagrama).
+
+```{r diagrama, fig.cap = "Diagrama do funcionamento das funções"}
+M <- matrix(nrow = 8, ncol = 8, byrow = T,
+            data = as.character(c(
+              #Q g h nr l ll sv sg
+              0,0,0,0,0,0,0,0, #Q
+              0,0,0,0,0,0,0,0, #g
+              0,0,0,0,0,0,0,0, #h
+              "","","",0,0,0,0,0, #nr
+              0,0,0,"Maximiza",0,0,0,0, #l
+              0,0,0,0,"Aproxima",0,0,0, #ll
+              0,0,0,0,0,0,0,0, #sv
+              0,0,0,0,0,"mle2","Estimativa_Inicial",0 #sg
+            )))
+
+nomes <- c("Q.b", "Q.b.grad", "Q.b.hess", "newton_raphson","laplace","loglik.sglmm","start.values.sglmm","sglmm")
+
+diagram::plotmat(M, pos = c(3, 1, 1, 1, 2), curve = F, name = nomes,
+                 box.type = "square", box.prop = 0.4, shadow.size = 0,
+                 box.cex = 1, box.size = 0.12)
+```
+
+O código R com todas as funções modificadas está presente no Apêndice A, e o código utilizado para a estimação, criação de tabelas e gráficos, está presente no Apêndice B.
+
+## Bases de dados
+
+Duas bases de dados serão utilizadas para avaliar a performance das funções: \texttt{Weed}, disponibilizada no pacote \texttt{geoCount} (\citeonline{DeOliveira_2015}), e \texttt{SPT}, disponibilizada pelo aluno de mestrado em Geotecnia pela Universidade Federal do Paraná, Lucas Michael Luzzi, apresentados no artigo **Modelagem Geoestatística de Parâmetros Geotécnicos do Solo de
+Um Aeroporto**, que será defendido no COBRAMSEG2024.
+
+A base de dados \texttt{Weed} consiste na contagem de ervas daninhas em uma plantação da fazenda Bjertorp, no sudoeste da Suécia. Imagens foram capturadas por câmera e um software de detecção de imagens foi utilizado para fazer a estimação da quantidade de plantas, que foi posteriormente comparado às contagens exatas (\citeonline{Guillot_2009}). A figura \@ref(fig:plotgeoweed), mostra os gráficos dos dados.
+
+```{r plotgeoweed, fig.cap='Gráfico da base de dados Weed.', out.height = "40%"}
+plot(weed_geo)
+```
+Os pontos coloridos no primeiro gráfico indicam o valor dos dados, em que os da cor azul representam dados no primeiro quartil, os verdes no segundo quartil, os amarelos no terceiro quartil e os vermelhos no quarto quartil. É possível verificar que o gráfico de pontos sugere possível dependência espacial pela distribuição das cores, não indicando tendência com as coordenadas (\texttt{x1} e \texttt{x2}).
+
+O quarto gráfico (o histograma com a densidade empírica) indica uma distribuição fortemente assimétrica e distante da Normal para a resposta . Como os dados são de contagens, a distribuição de Poisson é uma candidata natural para a modelagem, com a distribuição Binomial Negativa também sendo uma possível candidata. Não há covariáveis a serem incluídas na modelagem.
+
+A base de dados \texttt{SPT} se refere à ensaios de sondagem por penetração realizados no solo do Aeroporto Internacional Afonso Pena. O estudo tem como objetivo contar a quantidade de marteladas necessárias para afundar o solo 20 centímetros, em diferentes profundidades. Foram feitas 51 perfurações, com o ensaio sendo feito em todas elas em 15 profundidades diferentes, separadas por 1 metro cada. Assim, o objetivo é estimar a densidade do solo em cada profundidade, para se obterem informações geotécnicas que podem ser usadas em construções, fundações, pavimentação, entre outras aplicações.
+
+```{r boxplotprof, fig.cap='Boxplot de SPT por profundidade'}
+boxplot(y ~ Z, data = spt, xlab = "Profundidades (em metros)", ylab = "Contagem de marteladas")
+```
+
+O gráfico \@ref(fig:boxplotprof) mostra a distribuição da contagem de marteladas necessárias em cada profundidade para afundar o solo em 20 centímetros. Podemos ver que a quantidade necessária cresce, assim como a variância dessa contagem, conforme a profundidade no solo aumenta. Novamente, como os dados são de contagens, a distribuição de Poisson será usada na modelagem. Duas profundidades serão escolhidas para modelar, uma mais superficial e outra mais profunda, para comparar como se comportam as estimações do processo espacial nas duas. A mais superficial será a camada 4 metros e a mais profunda será a camada 13 metros.
+
+```{r plotspt, fig.cap='Gráfico da base de dados SPT, para profundidades 4 e 13 metros',fig.pos="!h",out.height="30%", out.width = "49%", fig.show = "hold"}
+plot(spt_4_geo, lowess = T)
+plot(spt_13_geo, lowess = T)
+```
+
+## Recursos computacionais
+
+Para o ajuste dos dados e para a computação será utilizada a linguagem de programação R, versão 4.4.1 (\citeonline{RTeam_2024}). Foram utilizados os pacotes \texttt{geoR} e \texttt{geoRglm} para análise de dados espaciais, \texttt{MASS} (\citeonline{Venables_Ripley_2002}), \texttt{lme4} (\citeonline{Maechler_Walker_2015}) e \texttt{bblme} (\citeonline{Bolker_2023}) para a otimização dos modelos por máxima verossimilhança, e \texttt{parallel} e \texttt{doParallel} (\citeonline{Weston_2022}) para execução em paralelo dos modelos.

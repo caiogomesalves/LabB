@@ -1,0 +1,8 @@
+
+## This assumes that the LIB_GSL variable points to working GSL libraries
+PKG_CPPFLAGS=-I$(LIB_GSL)/include -I../inst/include
+
+## This assume that we can call Rscript to ask Rcpp about its locations
+## Use the R_HOME indirection to support installations of multiple R version
+PKG_LIBS=-L$(LIB_GSL)/lib -lgsl -lgslcblas $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" -e "Rcpp:::LdFlags()") $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
